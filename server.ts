@@ -87,6 +87,12 @@ app.post(
         userId: `user-${Date.now()}`,
         newMessage: { role: 'user', parts },
       })) {
+        if ((event as { errorCode?: string }).errorCode) {
+          const e = event as { errorCode: string; errorMessage?: string };
+          send({ type: 'error', message: `${e.errorCode}: ${e.errorMessage ?? 'Unknown error'}` });
+          continue;
+        }
+
         // Detect agent step transitions via transfer
         const transferTarget = event.actions?.transferToAgent;
         if (transferTarget && dynamicStepMap[transferTarget]) {

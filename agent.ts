@@ -57,4 +57,3 @@ Ne procède jamais toi-même à la validation — délègue toujours au pipeline
   });
 }
 
-export const rootAgent = createRootAgent();
