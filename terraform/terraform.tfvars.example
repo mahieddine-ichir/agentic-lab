@@ -1,0 +1,4 @@
+project_id     = "your-google-cloud-project-id"
+region         = "europe-west9"
+service_name   = "communities-google-agents"
+gemini_api_key = "your-gemini-api-key"
