@@ -24,9 +24,10 @@ export function createRootAgent(apiKey?: string, options: { fraudEnabled?: boole
     subAgents.push(createFraudAgent(model));
   }
 
-  const claudeSonnet = new ClaudeLlm({ model: 'claude-sonnet-4-6', apiKey: process.env.ANTHROPIC_API_KEY });
-
-  subAgents.push(createEligibilityAgent(model), createDecisionAgent(claudeSonnet));
+  // if used, requires to set ANTHROPIC_API_KEY in .env file
+  // const claudeSonnet = new ClaudeLlm({ model: 'claude-sonnet-4-6', apiKey: process.env.ANTHROPIC_API_KEY });
+  //subAgents.push(createEligibilityAgent(model), createDecisionAgent(claudeSonnet));
+  subAgents.push(createEligibilityAgent(model), createDecisionAgent(model));
 
   const adhesionPipeline = new SequentialAgent({
     name: 'adhesion_pipeline',
