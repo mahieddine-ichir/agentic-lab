@@ -1,0 +1,24 @@
+{
+  "name": "communities-bedrock",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "node --env-file=.env --import tsx/esm server.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.800.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.800.0",
+    "@aws-sdk/client-s3": "^3.800.0",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^25.6.0"
+  }
+}
