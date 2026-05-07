@@ -1,0 +1,216 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Community Adhesion Tools",
+    "version": "1.0.0",
+    "description": "API for document validation and eligibility rules used by Vertex AI Agents."
+  },
+  "servers": [
+    {
+      "url": "https://TOOL_SERVER_URL",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/tools/validate_document_conformity": {
+      "post": {
+        "operationId": "validate_document_conformity",
+        "summary": "Validates a French administrative document. Checks required fields are present and the document is not expired or outdated. Returns conformity status with errors and warnings.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/check_document_authenticity": {
+      "post": {
+        "operationId": "check_document_authenticity",
+        "summary": "Analyses a single document for signs of tampering or forgery based on visible characteristics, date logic, and format checks.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/cross_check_document_consistency": {
+      "post": {
+        "operationId": "cross_check_document_consistency",
+        "summary": "Verifies consistency of personal data across multiple documents: names, dates of birth, number of children, etc.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/evaluate_fraud_risk": {
+      "post": {
+        "operationId": "evaluate_fraud_risk",
+        "summary": "Aggregates individual authenticity checks and cross-document consistency into a final fraud risk assessment with a clear recommendation.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/check_student_eligibility": {
+      "post": {
+        "operationId": "check_student_eligibility",
+        "summary": "Checks if submitted documents qualify the applicant for the \"Etudiant\" community. Requires a valid identity document and a valid student card or current-year enrollment certificate.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/check_famille_nombreuse_eligibility": {
+      "post": {
+        "operationId": "check_famille_nombreuse_eligibility",
+        "summary": "Checks if submitted documents qualify the applicant for the \"Famille nombreuse\" community. Requires a valid identity document and proof of 3 or more children (CAF attestation or livret de famille).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/check_jeune_parent_eligibility": {
+      "post": {
+        "operationId": "check_jeune_parent_eligibility",
+        "summary": "Checks if submitted documents qualify the applicant for the \"Jeune parent\" community. Requires a valid identity document and proof of a child born within the last 12 months.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/make_adhesion_decision": {
+      "post": {
+        "operationId": "make_adhesion_decision",
+        "summary": "Makes the final community adhesion decision from all three eligibility check results. Returns the formal accept/reject decision with full details.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

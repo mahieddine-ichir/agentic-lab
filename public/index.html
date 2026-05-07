@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demande d'Adhésion — Communautés</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    .community-card {
+      cursor: pointer;
+      transition: all .2s ease;
+      border: 2px solid transparent;
+    }
+    .community-card:hover { transform: translateY(-2px); }
+    .community-card.selected {
+      border-color: #4F46E5;
+      background-color: #EEF2FF;
+    }
+    .community-card.selected .card-icon-wrap { background-color: #4F46E5; }
+    .community-card.selected .card-icon-wrap svg { color: white; }
+
+    .dropzone {
+      border: 2px dashed #D1D5DB;
+      transition: all .2s ease;
+    }
+    .dropzone.drag-over {
+      border-color: #4F46E5;
+      background-color: #EEF2FF;
+    }
+
+    .step-indicator { transition: all .3s ease; }
+    .step-indicator.active .step-circle {
+      background-color: #4F46E5;
+      color: white;
+    }
+    .step-indicator.done .step-circle {
+      background-color: #10B981;
+      color: white;
+    }
+    .step-indicator .step-circle {
+      background-color: #E5E7EB;
+      color: #6B7280;
+    }
+
+    .stream-content { line-height: 1.7; }
+    .stream-content h1, .stream-content h2, .stream-content h3 {
+      font-weight: 600; margin-top: 1rem; margin-bottom: .5rem;
+    }
+    .stream-content h2 { font-size: 1.1rem; color: #1F2937; }
+    .stream-content h3 { font-size: 1rem; color: #374151; }
+    .stream-content strong { color: #111827; }
+    .stream-content ul, .stream-content ol { padding-left: 1.5rem; margin: .5rem 0; }
+    .stream-content li { margin: .25rem 0; }
+    .stream-content p { margin: .5rem 0; }
+    .stream-content hr { border-color: #E5E7EB; margin: 1rem 0; }
+
+    .agent-block { animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .cursor-blink::after {
+      content: '▋';
+      animation: blink 1s step-end infinite;
+      color: #4F46E5;
+      margin-left: 2px;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    .decision-card { animation: slideUp .4s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    #file-list .file-item:hover .remove-btn { opacity: 1; }
+    .remove-btn { opacity: 0; transition: opacity .15s; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen relative">
+
+<!-- Settings Icon -->
+<div class="fixed top-6 right-6 z-40">
+  <button
+    onclick="openSettings()"
+    class="p-2 bg-white rounded-full shadow-md border border-gray-100 text-gray-500 hover:text-indigo-600 hover:shadow-lg transition-all"
+    title="Paramètres"
+  >
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+    </svg>
+  </button>
+</div>
+
+<!-- API Key Modal -->
+<div id="api-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hidden">
+  <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 max-w-md w-full mx-4 transform transition-all">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 bg-amber-100 rounded-2xl mb-4">
+        <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold text-gray-900">Clé API Gemini</h2>
+      <p class="text-sm text-gray-500 mt-1">Veuillez configurer votre clé pour utiliser l'application</p>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Votre Clé API (Google AI Studio)</label>
+        <input
+          type="password"
+          id="modal-api-key-input"
+          placeholder="AIzaSy..."
+          class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+        />
+      </div>
+
+      <!-- Fraud Detection Toggle -->
+      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 bg-indigo-100 rounded-lg">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-gray-700">Détection de fraude</p>
+            <p class="text-[10px] text-gray-400">Analyser les documents pour fraude</p>
+          </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="fraud-toggle" class="sr-only peer" checked onchange="saveFraudPreference()">
+          <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
+      </div>
+      
+      <p class="text-[11px] text-gray-400 leading-relaxed">
+        Votre clé est stockée localement dans votre navigateur et n'est jamais transmise à nos serveurs, sauf pour authentifier vos requêtes vers l'IA.
+        Obtenez-en une gratuitement sur <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-500 hover:underline">Google AI Studio</a>.
+      </p>
+
+      <div class="flex gap-3 pt-2">
+        <button
+          onclick="closeSettings()"
+          id="close-modal-btn"
+          class="flex-1 px-4 py-3 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-all text-sm hidden"
+        >
+          Annuler
+        </button>
+        <button
+          onclick="saveApiKey()"
+          class="flex-1 px-4 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all text-sm"
+        >
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="max-w-3xl mx-auto px-4 py-10">
+
+  <!-- Header -->
+  <div class="text-center mb-10">
+    <div class="inline-flex items-center justify-center w-14 h-14 bg-indigo-100 rounded-2xl mb-4">
+      <svg class="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900">Demande d'Adhésion</h1>
+    <p class="mt-1 text-sm text-gray-500">Sélectionnez votre communauté, soumettez vos justificatifs et obtenez une décision instantanée</p>
+  </div>
+
+  <!-- FORM SECTION -->
+  <div id="form-section">
+
+    <!-- Step 1: Community selection -->
+    <div class="mb-8">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+        1 — Choisissez votre communauté
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+        <!-- Etudiant -->
+        <div class="community-card bg-white rounded-xl p-4 shadow-sm" data-community="Etudiant" onclick="selectCommunity(this)">
+          <div class="card-icon-wrap inline-flex items-center justify-center w-10 h-10 bg-indigo-100 rounded-xl mb-3">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 14l9-5-9-5-9 5 9 5z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 text-sm mb-1">Étudiant</h3>
+          <p class="text-xs text-gray-500 mb-2">Inscrit en établissement d'enseignement supérieur</p>
+          <div class="text-xs text-gray-400 space-y-1">
+            <div class="flex items-start gap-1">
+              <span class="text-indigo-400 mt-0.5">•</span>
+              <span>Pièce d'identité</span>
+            </div>
+            <div class="flex items-start gap-1">
+              <span class="text-indigo-400 mt-0.5">•</span>
+              <span>Carte étudiante ou certificat de scolarité</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Famille nombreuse -->
+        <div class="community-card bg-white rounded-xl p-4 shadow-sm" data-community="Famille nombreuse" onclick="selectCommunity(this)">
+          <div class="card-icon-wrap inline-flex items-center justify-center w-10 h-10 bg-indigo-100 rounded-xl mb-3">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm-9 8a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 text-sm mb-1">Famille nombreuse</h3>
+          <p class="text-xs text-gray-500 mb-2">3 enfants ou plus à charge</p>
+          <div class="text-xs text-gray-400 space-y-1">
+            <div class="flex items-start gap-1">
+              <span class="text-indigo-400 mt-0.5">•</span>
+              <span>Pièce d'identité</span>
+            </div>
+            <div class="flex items-start gap-1">
+              <span class="text-indigo-400 mt-0.5">•</span>
+              <span>Attestation CAF (&lt; 3 mois) ou livret de famille</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jeune parent -->
+        <div class="community-card bg-white rounded-xl p-4 shadow-sm" data-community="Jeune parent" onclick="selectCommunity(this)">
+          <div class="card-icon-wrap inline-flex items-center justify-center w-10 h-10 bg-indigo-100 rounded-xl mb-3">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 text-sm mb-1">Jeune parent</h3>
+          <p class="text-xs text-gray-500 mb-2">Enfant né dans les 12 derniers mois</p>
+          <div class="text-xs text-gray-400 space-y-1">
+            <div class="flex items-start gap-1">
+              <span class="text-indigo-400 mt-0.5">•</span>
+              <span>Pièce d'identité</span>
+            </div>
+            <div class="flex items-start gap-1">
+              <span class="text-indigo-400 mt-0.5">•</span>
+              <span>Livret de famille ou acte de naissance</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Step 2: Document upload (hidden until community selected) -->
+    <div id="upload-section" class="hidden mb-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+        2 — Soumettez vos documents
+      </h2>
+
+      <!-- Drop zone -->
+      <div
+        id="dropzone"
+        class="dropzone bg-white rounded-xl p-8 text-center cursor-pointer"
+        onclick="document.getElementById('file-input').click()"
+        ondragover="handleDragOver(event)"
+        ondragleave="handleDragLeave(event)"
+        ondrop="handleDrop(event)"
+      >
+        <div class="flex justify-center mb-3">
+          <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+          </div>
+        </div>
+        <p class="text-sm font-medium text-gray-700">Glissez vos fichiers ici</p>
+        <p class="text-xs text-gray-400 mt-1">ou cliquez pour sélectionner</p>
+        <p class="text-xs text-gray-300 mt-2">PDF, JPG, PNG, WEBP — 10 Mo max par fichier</p>
+        <input id="file-input" type="file" class="hidden" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="handleFileSelect(event)" />
+      </div>
+
+      <!-- File list -->
+      <div id="file-list" class="mt-3 space-y-2"></div>
+
+      <!-- Hint for selected community -->
+      <div id="doc-hint" class="mt-3 bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-700"></div>
+    </div>
+
+    <!-- Submit button -->
+    <button
+      id="submit-btn"
+      class="hidden w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      onclick="submitForm()"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      Analyser mes documents
+    </button>
+  </div>
+
+  <!-- RESULT SECTION (hidden until analysis starts) -->
+  <div id="result-section" class="hidden">
+
+    <!-- Progress steps (4 steps) -->
+    <div class="flex items-center gap-1 mb-6">
+      <div id="si-1" class="step-indicator flex items-center gap-1.5 flex-1 min-w-0">
+        <div class="step-circle w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">1</div>
+        <span class="text-xs font-medium text-gray-600 hidden sm:block truncate">Analyse</span>
+      </div>
+      <div class="h-px bg-gray-200 w-4 flex-shrink-0"></div>
+      <div id="si-2" class="step-indicator flex items-center gap-1.5 flex-1 min-w-0">
+        <div class="step-circle w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">2</div>
+        <span class="text-xs font-medium text-gray-600 hidden sm:block truncate">Fraude</span>
+      </div>
+      <div class="h-px bg-gray-200 w-4 flex-shrink-0"></div>
+      <div id="si-3" class="step-indicator flex items-center gap-1.5 flex-1 min-w-0">
+        <div class="step-circle w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">3</div>
+        <span class="text-xs font-medium text-gray-600 hidden sm:block truncate">Éligibilité</span>
+      </div>
+      <div class="h-px bg-gray-200 w-4 flex-shrink-0"></div>
+      <div id="si-4" class="step-indicator flex items-center gap-1.5 flex-1 min-w-0">
+        <div class="step-circle w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">4</div>
+        <span class="text-xs font-medium text-gray-600 hidden sm:block truncate">Décision</span>
+      </div>
+    </div>
+
+    <!-- Fraud alert card (hidden until fraud result arrives) -->
+    <div id="fraud-card" class="hidden mb-4"></div>
+
+    <!-- Decision card (hidden until decision arrives) -->
+    <div id="decision-card" class="hidden decision-card mb-4"></div>
+
+    <!-- Stream area -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+
+      <!-- Current agent label -->
+      <div id="agent-label" class="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
+        <div id="agent-spinner" class="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <span id="agent-label-text" class="text-xs font-medium text-gray-500">Initialisation...</span>
+      </div>
+
+      <!-- Content -->
+      <div id="stream-output" class="p-5 min-h-32 max-h-96 overflow-y-auto"></div>
+    </div>
+
+    <!-- New analysis button -->
+    <button
+      id="restart-btn"
+      class="hidden mt-4 w-full border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium py-2.5 px-6 rounded-xl transition-colors text-sm"
+      onclick="restartForm()"
+    >
+      Nouvelle demande
+    </button>
+  </div>
+
+</div>
+
+<script>
+  const AGENT_LABELS = {
+    document_processor: 'Analyse des documents',
+    fraud_detector: 'Détection de fraude',
+    eligibility_checker: "Vérification d'éligibilité",
+    decision_maker: 'Prise de décision',
+    community_adhesion_orchestrator: 'Initialisation...',
+    adhesion_pipeline: 'Démarrage du pipeline...',
+  };
+
+  const DOC_HINTS = {
+    'Etudiant': 'Fournissez votre pièce d\'identité (passeport ou carte nationale) ET votre carte étudiante ou certificat de scolarité pour l\'année en cours.',
+    'Famille nombreuse': 'Fournissez votre pièce d\'identité ET une attestation CAF de moins de 3 mois ou votre livret de famille (avec au moins 3 enfants inscrits).',
+    'Jeune parent': 'Fournissez votre pièce d\'identité ET le livret de famille ou l\'acte de naissance de votre enfant (né dans les 12 derniers mois).',
+  };
+
+  let selectedCommunity = null;
+  let files = [];
+  let currentStep = 0;
+  let streamByAuthor = {};
+
+  // --- Community selection ---
+
+  function selectCommunity(card) {
+    document.querySelectorAll('.community-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedCommunity = card.dataset.community;
+
+    const uploadSection = document.getElementById('upload-section');
+    uploadSection.classList.remove('hidden');
+    document.getElementById('doc-hint').textContent = DOC_HINTS[selectedCommunity] || '';
+
+    updateSubmitBtn();
+    uploadSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // --- File handling ---
+
+  function handleFileSelect(e) {
+    addFiles(Array.from(e.target.files));
+    e.target.value = '';
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('dropzone').classList.add('drag-over');
+  }
+
+  function handleDragLeave(e) {
+    document.getElementById('dropzone').classList.remove('drag-over');
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('dropzone').classList.remove('drag-over');
+    addFiles(Array.from(e.dataTransfer.files));
+  }
+
+  function addFiles(newFiles) {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+    newFiles.filter(f => allowed.includes(f.type)).forEach(f => files.push(f));
+    renderFileList();
+    updateSubmitBtn();
+  }
+
+  function removeFile(idx) {
+    files.splice(idx, 1);
+    renderFileList();
+    updateSubmitBtn();
+  }
+
+  function fileIcon(mime) {
+    if (mime === 'application/pdf') {
+      return `<svg class="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M4 18h12a2 2 0 002-2V8l-6-6H4a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        <path fill="white" d="M10 2v6h6"/>
+      </svg>`;
+    }
+    return `<svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm0 2h12v3.586l-2-2-4 4-3-3L4 10V5z"/>
+    </svg>`;
+  }
+
+  function renderFileList() {
+    const list = document.getElementById('file-list');
+    list.innerHTML = files.map((f, i) => `
+      <div class="file-item flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-sm border border-gray-100">
+        ${fileIcon(f.type)}
+        <span class="text-xs text-gray-700 flex-1 truncate">${f.name}</span>
+        <span class="text-xs text-gray-400">${(f.size / 1024).toFixed(0)} Ko</span>
+        <button class="remove-btn text-gray-300 hover:text-red-400 transition-colors p-1" onclick="removeFile(${i})">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function updateSubmitBtn() {
+    const btn = document.getElementById('submit-btn');
+    if (selectedCommunity && files.length > 0) {
+      btn.classList.remove('hidden');
+    } else {
+      btn.classList.add('hidden');
+    }
+  }
+
+  // --- API Key Management ---
+
+  function openSettings() {
+    const modal = document.getElementById('api-modal');
+    const input = document.getElementById('modal-api-key-input');
+    const closeBtn = document.getElementById('close-modal-btn');
+    const savedKey = localStorage.getItem('gemini_api_key');
+    const fraudEnabled = localStorage.getItem('fraud_enabled') !== 'false'; // default true
+    
+    document.getElementById('fraud-toggle').checked = fraudEnabled;
+
+    if (savedKey) {
+      input.value = savedKey;
+      closeBtn.classList.remove('hidden');
+    } else {
+      closeBtn.classList.add('hidden');
+    }
+    
+    modal.classList.remove('hidden');
+  }
+
+  function closeSettings() {
+    document.getElementById('api-modal').classList.add('hidden');
+  }
+
+  function saveFraudPreference() {
+    const enabled = document.getElementById('fraud-toggle').checked;
+    localStorage.setItem('fraud_enabled', enabled);
+  }
+
+  function saveApiKey() {
+    const input = document.getElementById('modal-api-key-input');
+    const key = input.value.trim();
+    
+    if (!key) {
+      alert('Veuillez entrer une clé API valide.');
+      return;
+    }
+    
+    localStorage.setItem('gemini_api_key', key);
+    saveFraudPreference();
+    closeSettings();
+  }
+
+  function checkApiKey() {
+    if (!localStorage.getItem('gemini_api_key')) {
+      openSettings();
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', checkApiKey);
+
+  // --- Form submission & SSE ---
+
+  async function submitForm() {
+    if (!selectedCommunity || files.length === 0) return;
+
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+      alert('Veuillez configurer votre clé API Gemini dans les paramètres (icône en haut à droite).');
+      openSettings();
+      return;
+    }
+
+    const fraudEnabled = localStorage.getItem('fraud_enabled') !== 'false';
+
+    // Hide form, show result
+    document.getElementById('form-section').classList.add('hidden');
+    const resultSection = document.getElementById('result-section');
+    resultSection.classList.remove('hidden');
+    resultSection.scrollIntoView({ behavior: 'smooth' });
+
+    // Handle fraud step indicator visibility
+    const fraudStepIndicator = document.getElementById('si-2');
+    if (!fraudEnabled) {
+      fraudStepIndicator.classList.add('hidden');
+      document.querySelectorAll('#si-2 + .h-px').forEach(el => el.classList.add('hidden'));
+    } else {
+      fraudStepIndicator.classList.remove('hidden');
+      document.querySelectorAll('#si-2 + .h-px').forEach(el => el.classList.remove('hidden'));
+    }
+
+    // Reset result state
+    currentStep = 0;
+    streamByAuthor = {};
+    document.getElementById('stream-output').innerHTML = '';
+    document.getElementById('decision-card').classList.add('hidden');
+    document.getElementById('fraud-card').classList.add('hidden');
+    document.getElementById('restart-btn').classList.add('hidden');
+    document.getElementById('agent-spinner').style.display = '';
+    setAgentLabel('Connexion à l\'agent...');
+    resetSteps();
+
+    // Build multipart form
+    const formData = new FormData();
+    formData.append('community', selectedCommunity);
+    formData.append('apiKey', apiKey);
+    formData.append('fraudEnabled', fraudEnabled);
+    files.forEach(f => formData.append('documents', f));
+
+    try {
+      const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+      if (!response.ok) throw new Error(`Erreur HTTP ${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              handleEvent(JSON.parse(line.slice(6)));
+            } catch {}
+          }
+        }
+      }
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  function handleEvent(event) {
+    switch (event.type) {
+      case 'step':
+        activateStep(event.step, event.label);
+        setAgentLabel(event.label);
+        break;
+
+      case 'text':
+        appendAgentText(event.author, event.text, event.partial);
+        break;
+
+      case 'fraud_result':
+        showFraudCard(event.data);
+        break;
+
+      case 'decision':
+        showDecisionCard(event.data);
+        break;
+
+      case 'done':
+        document.getElementById('agent-spinner').style.display = 'none';
+        setAgentLabel('Analyse terminée');
+        document.getElementById('restart-btn').classList.remove('hidden');
+        markAllStepsDone();
+        break;
+
+      case 'error':
+        showError(event.message);
+        break;
+    }
+  }
+
+  // --- Step management ---
+
+  function resetSteps() {
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById(`si-${i}`);
+      if (el) el.classList.remove('active', 'done');
+    }
+  }
+
+  function activateStep(step, label) {
+    // Mark previous steps as done
+    for (let i = 1; i < step; i++) {
+      const el = document.getElementById(`si-${i}`);
+      el.classList.remove('active');
+      el.classList.add('done');
+      // Replace number with checkmark
+      el.querySelector('.step-circle').innerHTML = `
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+        </svg>`;
+    }
+    const el = document.getElementById(`si-${step}`);
+    el.classList.add('active');
+    el.classList.remove('done');
+  }
+
+  function markAllStepsDone() {
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById(`si-${i}`);
+      if (!el) continue;
+      el.classList.remove('active');
+      el.classList.add('done');
+      el.querySelector('.step-circle').innerHTML = `
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+        </svg>`;
+    }
+  }
+
+  // --- Text streaming ---
+
+  const agentNames = {
+    document_processor: 'Analyse documentaire',
+    eligibility_checker: "Vérification d'éligibilité",
+    decision_maker: 'Décision',
+    community_adhesion_orchestrator: 'Orchestrateur',
+  };
+
+  function appendAgentText(author, text, partial) {
+    const output = document.getElementById('stream-output');
+    let block = document.getElementById(`block-${author}`);
+
+    if (!block) {
+      // Create new agent block
+      block = document.createElement('div');
+      block.id = `block-${author}`;
+      block.className = 'agent-block mb-4';
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center gap-1.5 mb-2';
+      header.innerHTML = `
+        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+        <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wide">${agentNames[author] || author}</span>`;
+
+      const content = document.createElement('div');
+      content.className = 'stream-content text-sm text-gray-700 pl-3';
+      content.id = `content-${author}`;
+
+      block.appendChild(header);
+      block.appendChild(content);
+      output.appendChild(block);
+      streamByAuthor[author] = '';
+    }
+
+    streamByAuthor[author] = (streamByAuthor[author] || '') + text;
+    const contentEl = document.getElementById(`content-${author}`);
+
+    if (partial) {
+      contentEl.innerHTML = marked.parse(streamByAuthor[author]);
+      contentEl.classList.add('cursor-blink');
+    } else {
+      contentEl.innerHTML = marked.parse(streamByAuthor[author]);
+      contentEl.classList.remove('cursor-blink');
+    }
+
+    output.scrollTop = output.scrollHeight;
+    setAgentLabel(AGENT_LABELS[author] || author);
+  }
+
+  // --- Fraud card ---
+
+  function showFraudCard(data) {
+    const card = document.getElementById('fraud-card');
+    card.classList.remove('hidden');
+
+    const level = data.overallRiskLevel;
+    const suspicions = data.allSuspicions ?? [];
+
+    const colors = {
+      low:    { bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'text-emerald-500', title: 'text-emerald-800', body: 'text-emerald-700', iconBg: 'bg-emerald-100' },
+      medium: { bg: 'bg-amber-50',   border: 'border-amber-200',   icon: 'text-amber-500',   title: 'text-amber-800',   body: 'text-amber-700',   iconBg: 'bg-amber-100' },
+      high:   { bg: 'bg-red-50',     border: 'border-red-200',     icon: 'text-red-500',     title: 'text-red-800',     body: 'text-red-700',     iconBg: 'bg-red-100' },
+    };
+    const c = colors[level] ?? colors.low;
+
+    const icons = {
+      low:    `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>`,
+      medium: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>`,
+      high:   `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>`,
+    };
+
+    const labels = { low: 'Risque faible', medium: 'Risque moyen', high: 'Risque élevé — demande bloquée' };
+    const suspicionsList = suspicions.length
+      ? `<ul class="mt-2 space-y-1 text-xs ${c.body} list-disc list-inside">${suspicions.map(s => `<li>${s}</li>`).join('')}</ul>`
+      : '';
+
+    card.innerHTML = `
+      <div class="${c.bg} border ${c.border} rounded-xl p-4 flex gap-4 items-start">
+        <div class="w-10 h-10 ${c.iconBg} rounded-xl flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 ${c.icon}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            ${icons[level] ?? icons.low}
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <p class="font-semibold text-sm ${c.title}">Analyse fraude — ${labels[level] ?? level}</p>
+          </div>
+          <p class="text-xs ${c.body} mt-0.5">${data.recommendation}</p>
+          ${suspicionsList}
+        </div>
+      </div>`;
+  }
+
+  // --- Decision card ---
+
+  function showDecisionCard(data) {
+    const card = document.getElementById('decision-card');
+    card.classList.remove('hidden');
+
+    const accepted = data.isAccepted;
+    const categories = accepted ? data.acceptedCategories : [];
+    const rejected = !accepted ? data.rejectedCategories : [];
+
+    if (accepted) {
+      card.innerHTML = `
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex gap-4 items-start">
+          <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-emerald-800">Demande acceptée</p>
+            <p class="text-sm text-emerald-700 mt-0.5">
+              ${data.applicantName} — communauté(s) accordée(s) : <strong>${categories.join(', ')}</strong>
+            </p>
+          </div>
+        </div>`;
+    } else {
+      const reasons = data.rejectedCategories?.map(r => `<li><strong>${r.category}</strong> : ${r.reason}</li>`).join('') || '';
+      card.innerHTML = `
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-4 items-start">
+          <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-red-800">Demande refusée</p>
+            <p class="text-sm text-red-700 mt-0.5">${data.applicantName}</p>
+            ${reasons ? `<ul class="text-xs text-red-600 mt-2 list-disc list-inside space-y-1">${reasons}</ul>` : ''}
+          </div>
+        </div>`;
+    }
+  }
+
+  // --- Helpers ---
+
+  function setAgentLabel(text) {
+    document.getElementById('agent-label-text').textContent = text;
+  }
+
+  function showError(message) {
+    document.getElementById('agent-spinner').style.display = 'none';
+    setAgentLabel('Erreur');
+    const output = document.getElementById('stream-output');
+    output.innerHTML += `
+      <div class="flex items-start gap-2 text-red-600 bg-red-50 rounded-lg p-3 text-sm">
+        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>${message}</span>
+      </div>`;
+    document.getElementById('restart-btn').classList.remove('hidden');
+  }
+
+  function restartForm() {
+    selectedCommunity = null;
+    files = [];
+    document.getElementById('form-section').classList.remove('hidden');
+    document.getElementById('result-section').classList.add('hidden');
+    document.getElementById('upload-section').classList.add('hidden');
+    document.getElementById('submit-btn').classList.add('hidden');
+    document.getElementById('file-list').innerHTML = '';
+    document.querySelectorAll('.community-card').forEach(c => c.classList.remove('selected'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+name: adhesion_pipeline
+description: Pipeline séquentiel pour le traitement des demandes d'adhésion.
+goal: Orchestrer les étapes de traitement des documents, détection de fraude, vérification d'éligibilité et décision finale.
+instructions: |
+  Tu es responsable de l'exécution séquentielle du processus d'adhésion.
+  Tu dois suivre STRICTEMENT ces étapes dans l'ordre:
+
+  1. **Analyse des documents**: Délègue au playbook `document_processor`. Attends son rapport détaillé.
+  2. **Détection de fraude**: Délègue au playbook `fraud_detector` en lui transmettant le rapport du document_processor.
+  3. **Vérification d'éligibilité**: Délègue au playbook `eligibility_checker` avec les résultats précédents.
+  4. **Décision finale**: Délègue au playbook `decision_maker` pour conclure et informer le demandeur.
+
+  Si une étape échoue de manière critique (ex: document totalement illisible), arrête le processus et informe le demandeur via le playbook `decision_maker`.
